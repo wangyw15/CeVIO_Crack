@@ -1,99 +1,108 @@
 ﻿using System;
-using System.IO;
-using System.Security.Cryptography;
 using System.Text;
-using System.Management;
-using System.Linq;
+using System.Reflection;
+using System.Collections.Generic;
 
-namespace CeVIO_crack
+namespace CeVIO
 {
+    public static class CeVIOAssembly
+    {
+        public static readonly Assembly CeVIO = Assembly.LoadFile("C:\\Program Files\\CeVIO\\CeVIO AI\\CeVIO AI.exe");
+
+        private static readonly Type _EditorResource = CeVIO.GetType("CeVIO.Editor.Properties.Resources");
+
+        public static object GetEditorResource(string name)
+        {
+            return _EditorResource.GetProperty(name, BindingFlags.Static | BindingFlags.Public).GetValue(null);
+        }
+
+        public static T GetEditorResource<T>(string name)
+        {
+            return (T)GetEditorResource(name);
+        }
+    }
+    
     public static class ProductLicense
     {
+        private static readonly Type _ProductLicense = CeVIOAssembly.CeVIO.GetType("CeVIO.Editor.MissionAssistant.ProductLicense");
+
+        
         public static DateTime DescrambleDateTime(byte[] value)
         {
-            return new DateTime(BitConverter.ToInt64(Cipher.Decrypt(value, Authorizer.HDPrimaryVolumeSerialNo), 0));
+            var method = _ProductLicense.GetMethod("DescrambleDateTime", BindingFlags.Static | BindingFlags.NonPublic);
+            return (DateTime)method.Invoke(null, new object[] { value });
         }
 
         public static byte[] ScrambleDateTime(DateTime value)
         {
-            return Cipher.Encrypt(BitConverter.GetBytes(value.Ticks), Authorizer.HDPrimaryVolumeSerialNo);
+            var method = _ProductLicense.GetMethod("ScrambleDateTime", BindingFlags.Static | BindingFlags.NonPublic);
+            return (byte[])method.Invoke(null, new object[] { value });
         }
     }
 
     public static class Authorizer
     {
+        private static readonly Type _Authorizer = CeVIOAssembly.CeVIO.GetType("CeVIO.Editor.MissionAssistant.Authorizer");
+        
         public static string HDPrimaryVolumeSerialNo
         {
             get
             {
-                return Authorizer.hdPrimaryVolumeSerialNo.Value;
+                return _Authorizer.GetProperty("HDPrimaryVolumeSerialNo").GetValue(null) as string;
+            }
+        }
+    }
+
+    public static class LicenseSummary
+    {
+        private static readonly Type _LicenseSummary = CeVIOAssembly.CeVIO.GetType("CeVIO.Editor.MissionAssistant.LicenseSummary");
+        
+        public static IEnumerable<object> Packages
+        {
+            get
+            {
+                var packages = _LicenseSummary.GetProperty("Packages");
+                return packages.GetValue(null) as IEnumerable<object>;
             }
         }
 
-        private static Lazy<string> hdPrimaryVolumeSerialNo = new Lazy<string>(() => new ManagementObjectSearcher("select VolumeSerialNumber from Win32_LogicalDisk where DeviceID=\"C:\"").Get().Cast<ManagementBaseObject>().First<ManagementBaseObject>()["VolumeSerialNumber"].ToString());
+        public static Encoding encoding
+        {
+            get
+            {
+                var e = _LicenseSummary.GetField("encoding", BindingFlags.NonPublic | BindingFlags.Static);
+                return (Encoding)e.GetValue(null);
+            }
+        }
     }
 
     public static class Cipher
     {
+        private static readonly Type _Cipher = CeVIOAssembly.CeVIO.GetType("CeVIO.Editor.Utilities.Cipher");
+
         public static byte[] Encrypt(byte[] value, byte[] keyToken)
         {
-            Rfc2898DeriveBytes rfc2898DeriveBytes = new Rfc2898DeriveBytes(keyToken, Cipher.salt, 1024);
-            ICryptoTransform cryptoTransform = Cipher.gizmo.CreateEncryptor(rfc2898DeriveBytes.GetBytes(Cipher.gizmo.KeySize / 8), rfc2898DeriveBytes.GetBytes(Cipher.gizmo.BlockSize / 8));
-            return Cipher.Compute(value, cryptoTransform);
+            var encrypt = _Cipher.GetMethod("Encrypt", new Type[] { typeof(byte[]), typeof(byte[]) });
+            return (byte[])encrypt.Invoke(null, new object[] { value, keyToken });
         }
 
         public static byte[] Encrypt(byte[] value, string keyToken)
         {
-            Rfc2898DeriveBytes rfc2898DeriveBytes = new Rfc2898DeriveBytes(keyToken, Cipher.salt, 1024);
-            ICryptoTransform cryptoTransform = Cipher.gizmo.CreateEncryptor(rfc2898DeriveBytes.GetBytes(Cipher.gizmo.KeySize / 8), rfc2898DeriveBytes.GetBytes(Cipher.gizmo.BlockSize / 8));
-            return Cipher.Compute(value, cryptoTransform);
+            var encrypt = _Cipher.GetMethod("Encrypt", new Type[] { typeof(byte[]), typeof(string) });
+            return (byte[])encrypt.Invoke(null, new object[] { value, keyToken });
         }
-
+        
         public static byte[] Decrypt(byte[] value, byte[] keyToken)
         {
-            Rfc2898DeriveBytes rfc2898DeriveBytes = new Rfc2898DeriveBytes(keyToken, Cipher.salt, 1024);
-            ICryptoTransform cryptoTransform = Cipher.gizmo.CreateDecryptor(rfc2898DeriveBytes.GetBytes(Cipher.gizmo.KeySize / 8), rfc2898DeriveBytes.GetBytes(Cipher.gizmo.BlockSize / 8));
-            return Cipher.Compute(value, cryptoTransform);
+            var encrypt = _Cipher.GetMethod("Decrypt", new Type[] { typeof(byte[]), typeof(byte[]) });
+            return (byte[])encrypt.Invoke(null, new object[] { value, keyToken });
         }
 
         public static byte[] Decrypt(byte[] value, string keyToken)
         {
-            Rfc2898DeriveBytes rfc2898DeriveBytes = new Rfc2898DeriveBytes(keyToken, Cipher.salt, 1024);
-            ICryptoTransform cryptoTransform = Cipher.gizmo.CreateDecryptor(rfc2898DeriveBytes.GetBytes(Cipher.gizmo.KeySize / 8), rfc2898DeriveBytes.GetBytes(Cipher.gizmo.BlockSize / 8));
-            return Cipher.Compute(value, cryptoTransform);
+            var encrypt = _Cipher.GetMethod("Decrypt", new Type[] { typeof(byte[]), typeof(string) });
+            return (byte[])encrypt.Invoke(null, new object[] { value, keyToken });
         }
-
-        private static byte[] Compute(byte[] value, ICryptoTransform transform)
-        {
-            byte[] array;
-            try
-            {
-                using (MemoryStream memoryStream = new MemoryStream())
-                {
-                    using (CryptoStream cryptoStream = new CryptoStream(memoryStream, transform, CryptoStreamMode.Write))
-                    {
-                        cryptoStream.Write(value, 0, value.Length);
-                        cryptoStream.FlushFinalBlock();
-                        array = memoryStream.ToArray();
-                    }
-                }
-            }
-            catch
-            {
-                array = null;
-            }
-            return array;
-        }
-
-        private const int iterationCount = 1024;
-
-        private static readonly byte[] salt = Encoding.UTF8.GetBytes("saltって何？塩？");
-
-        private static readonly Rijndael gizmo = new RijndaelManaged
-        {
-            Mode = CipherMode.ECB,
-            Padding = PaddingMode.ISO10126
-        };
     }
 }
 

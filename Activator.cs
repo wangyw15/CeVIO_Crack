@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
+using CeVIO;
 
 namespace CeVIO_crack
 {
@@ -23,8 +24,6 @@ namespace CeVIO_crack
     {
         public string ActivationKey { get; set; } = "00000-00000-00000-00000";
         private readonly byte[] _EmptyData = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-        private readonly Encoding _Encoding = Encoding.GetEncoding("euc-jp");
-        private readonly int _HeaderLength = 1078;
 
         protected abstract string ProductKeyName { get; }
         protected abstract string ProductName { get; }
@@ -79,12 +78,11 @@ namespace CeVIO_crack
                 var encryptedOriginalLicenseData = registry.GetValue("TM") as byte[];
 
                 // read header
-                var header = new byte[_HeaderLength];
-                Array.Copy(encryptedOriginalLicenseData, header, _HeaderLength);
-
+                var header = CeVIOAssembly.GetEditorResource<byte[]>("_header");
+                
                 // decrypt and parse data
-                encryptedOriginalLicenseData = encryptedOriginalLicenseData.Skip(_HeaderLength).ToArray<byte>();
-                var decrypted = _Encoding.GetString(Cipher.Decrypt(encryptedOriginalLicenseData, Authorizer.HDPrimaryVolumeSerialNo));
+                encryptedOriginalLicenseData = encryptedOriginalLicenseData.Skip(header.Length).ToArray<byte>();
+                var decrypted = LicenseSummary.encoding.GetString(Cipher.Decrypt(encryptedOriginalLicenseData, Authorizer.HDPrimaryVolumeSerialNo));
                 var doc = XElement.Parse(decrypted);
                 return doc.ToString();
             }
@@ -97,12 +95,11 @@ namespace CeVIO_crack
                 var encryptedOriginalLicenseData = registry.GetValue("TM") as byte[];
 
                 // read header
-                var header = new byte[_HeaderLength];
-                Array.Copy(encryptedOriginalLicenseData, header, _HeaderLength);
+                var header = CeVIOAssembly.GetEditorResource<byte[]>("_header");
 
                 // decrypt and parse data
-                encryptedOriginalLicenseData = encryptedOriginalLicenseData.Skip(_HeaderLength).ToArray<byte>();
-                var decrypted = _Encoding.GetString(Cipher.Decrypt(encryptedOriginalLicenseData, Authorizer.HDPrimaryVolumeSerialNo));
+                encryptedOriginalLicenseData = encryptedOriginalLicenseData.Skip(header.Length).ToArray<byte>();
+                var decrypted = LicenseSummary.encoding.GetString(Cipher.Decrypt(encryptedOriginalLicenseData, Authorizer.HDPrimaryVolumeSerialNo));
                 var doc = XElement.Parse(decrypted);
 
                 // set ReleasedFeatures to Full
@@ -127,7 +124,7 @@ namespace CeVIO_crack
                 }
 
                 // generate and write TM data
-                var encrypted = Cipher.Encrypt(_Encoding.GetBytes(doc.ToString(SaveOptions.DisableFormatting)), Authorizer.HDPrimaryVolumeSerialNo);
+                var encrypted = Cipher.Encrypt(LicenseSummary.encoding.GetBytes(doc.ToString(SaveOptions.DisableFormatting)), Authorizer.HDPrimaryVolumeSerialNo);
                 var encryptedFullLicenseData = new List<byte>(header);
                 encryptedFullLicenseData.AddRange(encrypted);
                 registry.SetValue("TM", encryptedFullLicenseData.ToArray());
