@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using CeVIO;
 
 namespace CeVIO_crack
 {
@@ -36,7 +34,7 @@ namespace CeVIO_crack
             activator.ActivateProducts();
             Console.WriteLine("Activated all packages");
 
-            activator.GenerateTM();
+            activator.GenerateLicenseSummary();
             Console.WriteLine("Authorized");
 
             Console.WriteLine("All completed");
@@ -50,7 +48,7 @@ namespace CeVIO_crack
             activator.ActivateProducts();
             Console.WriteLine("Activated all packages");
 
-            activator.GenerateTM();
+            activator.GenerateLicenseSummary();
             Console.WriteLine("Authorized");
 
             Console.WriteLine("All completed");

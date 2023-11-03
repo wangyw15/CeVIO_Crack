@@ -20,6 +20,7 @@ namespace CeVIO_crack
 
         protected override string ProductName => "CeVIO AI";
     }
+    
     public abstract class BaseActivator
     {
         public string ActivationKey { get; set; } = "00000-00000-00000-00000";
@@ -36,13 +37,13 @@ namespace CeVIO_crack
             foreach (var code in packageCodes)
             {
                 var keyPath = "";
-                if (code == mainPackageCode)
+                if (code.ToString() == mainPackageCode)
                 {
-                    keyPath = $"Software\\{ProductKeyName}\\Creative Studio\\Product";
+                    keyPath = $"{LicenseSummary.KeyPath}\\Creative Studio\\Product";
                 }
                 else
                 {
-                    keyPath = "Software\\" + ProductKeyName + "\\Product\\{" + code.ToUpper() + "}";
+                    keyPath = LicenseSummary.KeyPath + "\\Product\\{" + code.ToString().ToUpper() + "}";
                 }
 
                 using (var registryKey = Registry.CurrentUser.CreateSubKey(keyPath))
@@ -57,83 +58,31 @@ namespace CeVIO_crack
             }
         }
 
-        public string[] GetPackageCodes()
+        public IEnumerable<Guid> GetPackageCodes()
         {
-            using (var registry = Registry.LocalMachine.OpenSubKey($"Software\\{ProductKeyName}\\Product"))
+            using (var registry = Registry.LocalMachine.OpenSubKey($"{LicenseSummary.KeyPath}\\Product"))
             {
                 if (registry == null)
                 {
-                    return null;
+                    yield break;
                 }
-                return (from x in registry.GetSubKeyNames()
-                        let name = x.Split(' ')[0]
-                        select new Guid(name).ToString()).ToArray();
-            }
-        }
-
-        public string ReadTM()
-        {
-            using (var registry = Registry.CurrentUser.CreateSubKey("Software\\" + ProductKeyName))
-            {
-                var encryptedOriginalLicenseData = registry.GetValue("TM") as byte[];
-
-                // read header
-                var header = CeVIOAssembly.GetEditorResource<byte[]>("_header");
-                
-                // decrypt and parse data
-                encryptedOriginalLicenseData = encryptedOriginalLicenseData.Skip(header.Length).ToArray<byte>();
-                var decrypted = LicenseSummary.encoding.GetString(Cipher.Decrypt(encryptedOriginalLicenseData, Authorizer.HDPrimaryVolumeSerialNo));
-                var doc = XElement.Parse(decrypted);
-                return doc.ToString();
-            }
-        }
-
-        public void GenerateTM()
-        {
-            using (var registry = Registry.CurrentUser.CreateSubKey("Software\\" + ProductKeyName))
-            {
-                var encryptedOriginalLicenseData = registry.GetValue("TM") as byte[];
-
-                // read header
-                var header = CeVIOAssembly.GetEditorResource<byte[]>("_header");
-
-                // decrypt and parse data
-                encryptedOriginalLicenseData = encryptedOriginalLicenseData.Skip(header.Length).ToArray<byte>();
-                var decrypted = LicenseSummary.encoding.GetString(Cipher.Decrypt(encryptedOriginalLicenseData, Authorizer.HDPrimaryVolumeSerialNo));
-                var doc = XElement.Parse(decrypted);
-
-                // set ReleasedFeatures to Full
-                var feature = (from x in doc.Elements() where x.Name == "ReleasedFeatures" select x).FirstOrDefault();
-                feature.SetAttributeValue("Value", "Full");
-
-                // set trial to NotUse
-                var trial = (from x in doc.Elements() where x.Name == "TrialSettings" select x).FirstOrDefault();
-                feature.SetAttributeValue("State", "NotUse");
-
-                // authorize all installed packages
-                var activatedPackagesElement = (from x in doc.Elements() where x.Name == "ActivatedPackages" select x).FirstOrDefault();
-                var activatedPackages = from x in activatedPackagesElement.Elements("Package") select x.Attribute("PackageCode").Value;
-                foreach (var packageCode in GetPackageCodes())
+                foreach (var x in registry.GetSubKeyNames())
                 {
-                    if (!activatedPackages.Contains(packageCode))
-                    {
-                        var package = new XElement("Package");
-                        package.SetAttributeValue("PackageCode", packageCode);
-                        activatedPackagesElement.Add(package);
-                    }
+                    yield return new Guid(x.Split(' ')[0]);
                 }
-
-                // generate and write TM data
-                var encrypted = Cipher.Encrypt(LicenseSummary.encoding.GetBytes(doc.ToString(SaveOptions.DisableFormatting)), Authorizer.HDPrimaryVolumeSerialNo);
-                var encryptedFullLicenseData = new List<byte>(header);
-                encryptedFullLicenseData.AddRange(encrypted);
-                registry.SetValue("TM", encryptedFullLicenseData.ToArray());
             }
+        }
+
+        public void GenerateLicenseSummary()
+        {
+            LicenseSummary.AddFeature(Feature.Full);
+            LicenseSummary.AddPackageCodes(GetPackageCodes());
+            LicenseSummary.Save();
         }
 
         public string GetCeVIOProductCode()
         {
-            using (var registry = Registry.LocalMachine.OpenSubKey($"SOFTWARE\\{ProductKeyName}\\Product"))
+            using (var registry = Registry.LocalMachine.OpenSubKey($"{LicenseSummary.KeyPath}\\Product"))
             {
                 foreach(var subKey in registry.GetSubKeyNames())
                 {
