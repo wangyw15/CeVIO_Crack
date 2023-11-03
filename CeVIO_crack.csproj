@@ -53,9 +53,6 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CeVIO AI">
-      <HintPath>C:\Program Files\CeVIO\CeVIO AI\CeVIO AI.exe</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Management" />
