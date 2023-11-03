@@ -6,52 +6,96 @@ using System.Xml.Linq;
 
 namespace CeVIO
 {
-    public static class CeVIOAssembly
+    public class CeVIOAssembly
     {
-        public static readonly Assembly CeVIO = Assembly.LoadFile("C:\\Program Files\\CeVIO\\CeVIO AI\\CeVIO AI.exe");
+        public Assembly Instance { get; }
+        
+        private Type _EditorResource;
 
-        private static readonly Type _EditorResource = CeVIO.GetType("CeVIO.Editor.Properties.Resources");
+        public CeVIOAssembly(string cevioPath)
+        {
+            Instance = Assembly.LoadFile(cevioPath);
+            _EditorResource = Instance.GetType("CeVIO.Editor.Properties.Resources");
+        }
 
-        public static object GetEditorResource(string name)
+        public object GetEditorResource(string name)
         {
             return _EditorResource.GetProperty(name, BindingFlags.Static | BindingFlags.Public).GetValue(null);
         }
 
-        public static T GetEditorResource<T>(string name)
+        public T GetEditorResource<T>(string name)
         {
             return (T)GetEditorResource(name);
         }
     }
-    
-    public static class ProductLicense
+
+    public class App
     {
-        public static readonly Type Instance = CeVIOAssembly.CeVIO.GetType("CeVIO.Editor.MissionAssistant.ProductLicense");
+        private CeVIOAssembly _Assembly;
+        
+        public Type Instance { get; }
+
+        public App(CeVIOAssembly assembly)
+        {
+            _Assembly = assembly;
+            Instance = _Assembly.Instance.GetType("CeVIO.Editor.App");
+        }
+        
+        public string CommonName
+        {
+            get
+            {
+                var name = Instance.GetField("CommonName");
+                return name.GetValue(null) as string;
+            }
+        }
+    }
+    
+    public class ProductLicense
+    {
+        private CeVIOAssembly _Assembly;
+
+        public Type Instance { get; }
+
+        public ProductLicense(CeVIOAssembly assembly)
+        {
+            _Assembly = assembly;
+            Instance = _Assembly.Instance.GetType("CeVIO.Editor.MissionAssistant.ProductLicense");
+        }
 
         
-        public static DateTime DescrambleDateTime(byte[] value)
+        public DateTime DescrambleDateTime(byte[] value)
         {
             var method = Instance.GetMethod("DescrambleDateTime", BindingFlags.Static | BindingFlags.NonPublic);
             return (DateTime)method.Invoke(null, new object[] { value });
         }
 
-        public static byte[] ScrambleDateTime(DateTime value)
+        public byte[] ScrambleDateTime(DateTime value)
         {
             var method = Instance.GetMethod("ScrambleDateTime", BindingFlags.Static | BindingFlags.NonPublic);
             return (byte[])method.Invoke(null, new object[] { value });
         }
     }
 
-    public static class Authorizer
+    public class Authorizer
     {
-        public static readonly Type Instance = CeVIOAssembly.CeVIO.GetType("CeVIO.Editor.MissionAssistant.Authorizer");
+        private CeVIOAssembly _Assembly;
+
+        public Type Instance { get; }
+
+        public Authorizer(CeVIOAssembly assembly)
+        {
+            _Assembly = assembly;
+            Instance = _Assembly.Instance.GetType("CeVIO.Editor.MissionAssistant.Authorizer");
+        }
         
-        public static IEnumerable<object> ReadLicenses()
+        public IEnumerable<object> ReadLicenses()
         {
             var read = Instance.GetMethod("ReadLicenses", BindingFlags.Static | BindingFlags.NonPublic);
             return read.Invoke(null, null) as IEnumerable<object>;
         }
 
-        public static IEnumerable<object> Licenses
+        public IEnumerable<object> Licenses
         {
             get
             {
@@ -62,11 +106,19 @@ namespace CeVIO
         }
     }
 
-    public static class LicenseSummary
+    public class LicenseSummary
     {
-        public static readonly Type Instance = CeVIOAssembly.CeVIO.GetType("CeVIO.Editor.MissionAssistant.LicenseSummary");
+        private CeVIOAssembly _Assembly;
+
+        public Type Instance { get; }
+
+        public LicenseSummary(CeVIOAssembly assembly)
+        {
+            _Assembly = assembly;
+            Instance = _Assembly.Instance.GetType("CeVIO.Editor.MissionAssistant.LicenseSummary");
+        }
         
-        public static IEnumerable<object> Packages
+        public IEnumerable<object> Packages
         {
             get
             {
@@ -75,7 +127,7 @@ namespace CeVIO
             }
         }
 
-        public static Encoding encoding
+        public Encoding encoding
         {
             get
             {
@@ -84,31 +136,31 @@ namespace CeVIO
             }
         }
 
-        public static XElement Load()
+        public XElement Load()
         {
             var load = Instance.GetMethod("Load", BindingFlags.NonPublic | BindingFlags.Static);
             return load.Invoke(null, null) as XElement;
         }
 
-        public static void Save()
+        public void Save()
         {
             var save = Instance.GetMethod("Save", BindingFlags.Static | BindingFlags.Public);
             save.Invoke(null, null);
         }
 
-        public static void AddFeature(Feature feature)
+        public void AddFeature(Feature feature)
         {
             var add = Instance.GetMethod("AddFeature", BindingFlags.NonPublic | BindingFlags.Static);
             add.Invoke(null, new object[] { feature });
         }
 
-        public static void AddPackageCodes(IEnumerable<Guid> codes)
+        public void AddPackageCodes(IEnumerable<Guid> codes)
         {
             var add = Instance.GetMethod("AddPackageCodes", new Type[] { typeof(IEnumerable<Guid>) });
             add.Invoke(null, new object[] { codes });
         }
 
-        public static string KeyPath
+        public string KeyPath
         {
             get
             {
@@ -117,7 +169,7 @@ namespace CeVIO
             }
         }
 
-        public static string ValueName
+        public string ValueName
         {
             get
             {
@@ -126,7 +178,7 @@ namespace CeVIO
             }
         }
 
-        public static Type PackageUnit
+        public Type PackageUnit
         {
             get
             {
