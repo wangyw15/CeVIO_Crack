@@ -31,28 +31,30 @@ namespace CeVIO_crack
 
             foreach (var code in packageCodes)
             {
-                var keyPath = "";
                 if (code.ToString() == mainPackageCode)
                 {
-                    keyPath = $"{_LicenseSummary.KeyPath}\\Creative Studio\\Product";
+                    WriteLicenseData($"{_LicenseSummary.KeyPath}\\Creative Studio\\Product", validateTime);
                 }
                 else
                 {
-                    keyPath = _LicenseSummary.KeyPath + "\\Product\\{" + code.ToString().ToUpper() + "}";
-                }
-
-                using (var registryKey = Registry.CurrentUser.CreateSubKey(keyPath))
-                {
-                    var expire = DateTime.Now + (validateTime ?? TimeSpan.FromDays(365));
-                    var data = _ProductLicense.ScrambleDateTime(expire);
-                    registryKey.SetValue(null, _EmptyData);
-                    registryKey.SetValue("ProductKey", ActivationKey);
-                    registryKey.SetValue("License", data);
-                    registryKey.SetValue("Registration", data);
+                    WriteLicenseData(_LicenseSummary.KeyPath + "\\Product\\{" + code.ToString().ToUpper() + "}", validateTime);
                 }
             }
         }
 
+        public void WriteLicenseData(string keyPath, TimeSpan? validateTime = null)
+        {
+            using (var registryKey = Registry.CurrentUser.CreateSubKey(keyPath))
+            {
+                var expire = DateTime.Now + (validateTime ?? TimeSpan.FromDays(365));
+                var data = _ProductLicense.ScrambleDateTime(expire);
+                registryKey.SetValue(null, _EmptyData);
+                registryKey.SetValue("ProductKey", ActivationKey);
+                registryKey.SetValue("License", data);
+                registryKey.SetValue("Registration", data);
+            }
+        }
+        
         public IEnumerable<Guid> GetPackageCodes()
         {
             using (var registry = Registry.LocalMachine.OpenSubKey($"{_LicenseSummary.KeyPath}\\Product"))
@@ -66,6 +68,16 @@ namespace CeVIO_crack
                     yield return new Guid(x.Split(' ')[0]);
                 }
             }
+        }
+
+        public List<Guid> GetPackageCodesFromLicenseSummary()
+        {
+            var ret = new List<Guid>();
+            foreach (var i in _LicenseSummary.Packages)
+            {
+                ret.Add((Guid)_LicenseSummary.PackageUnit.GetProperty("PackageCode").GetValue(i));
+            }
+            return ret;
         }
 
         public void GenerateLicenseSummary()
