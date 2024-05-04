@@ -7,11 +7,32 @@ using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
-namespace CeVIO_crack
+namespace CeVIOActivator
 {
     public static class AssemblyPatcher
     {
         private const string TARGET_FILE = "CeVIO.ToolBarControl.dll";
+
+        [Obsolete("Directly patch executable will make it not work. Use PatchFile instead.")]
+        public static void PatchExecutable(string cevioExecutablePath)
+        {
+            var resolver = new DefaultAssemblyResolver();
+            resolver.AddSearchDirectory(Path.GetDirectoryName(cevioExecutablePath));
+
+            var asm = AssemblyDefinition.ReadAssembly(cevioExecutablePath, new ReaderParameters
+            {
+                AssemblyResolver = resolver
+            });
+            var type = asm.MainModule.GetType("CeVIO.Editor.MissionAssistant.Authorizer");
+            var setter = type.Properties.First(x => x.Name == "HasAuthorized").SetMethod;
+            var method = type.Methods.First(x => x.Name == "Authorize");
+            var processor = method.Body.GetILProcessor();
+            processor.Replace(method.Body.Instructions[2], processor.Create(OpCodes.Nop));
+            processor.Replace(method.Body.Instructions[3], processor.Create(OpCodes.Ldc_I4_1));
+            processor.Replace(method.Body.Instructions[4], processor.Create(OpCodes.Call, setter));
+            asm.Write("CeVIO AI.exe");
+        }
+
         public static void PatchFile(string cevioInstallPath)
         {
             // System.Void CeVIO.ToolBarControl.ToolBarControl::.cctor()

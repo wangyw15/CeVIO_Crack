@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using CeVIO;
 
-namespace CeVIO_crack
+namespace CeVIOActivator
 {
     public class Activator
     {

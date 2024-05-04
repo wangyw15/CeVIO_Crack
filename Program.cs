@@ -2,7 +2,7 @@
 using System.IO;
 using Microsoft.Win32;
 
-namespace CeVIO_crack
+namespace CeVIOActivator
 {
     class Program
     {
