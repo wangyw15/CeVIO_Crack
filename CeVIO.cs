@@ -9,12 +9,12 @@ namespace CeVIO
     public class CeVIOAssembly
     {
         public Assembly Instance { get; }
-        
+
         private Type _EditorResource;
 
-        public CeVIOAssembly(string cevioPath)
+        public CeVIOAssembly(string cevioExecutablePath)
         {
-            Instance = Assembly.LoadFile(cevioPath);
+            Instance = Assembly.LoadFile(cevioExecutablePath);
             _EditorResource = Instance.GetType("CeVIO.Editor.Properties.Resources");
         }
 
@@ -100,7 +100,6 @@ namespace CeVIO
             get
             {
                 var licenses = Instance.GetProperty("Licenses");
-                var a = licenses.GetValue(null);
                 return licenses.GetValue(null) as IEnumerable<object>;
             }
         }

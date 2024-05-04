@@ -9,38 +9,50 @@ namespace CeVIO_crack
         // N54KC-7U2ZL-PQZBM-SPF8H suzuki trial key
         static void Main(string[] args)
         {
-            var path = GetCeVIOExecutable();
-            if (string.IsNullOrEmpty(path))
+            var executablePath = GetCeVIOExecutable();
+            if (string.IsNullOrEmpty(executablePath))
             {
                 Console.Write("CeVIO AI.exe not found, please specify the file: ");
-                path = (Console.ReadLine() ?? "").Replace("\"", "");
+                executablePath = (Console.ReadLine() ?? "").Replace("\"", "");
             }
-            var activator = new Activator(path);
-
+            
             Console.WriteLine("Loading...");
-
+            var activator = new Activator(executablePath);
             activator.ActivateProducts();
             Console.WriteLine("Activated all packages");
 
             activator.GenerateLicenseSummary();
             Console.WriteLine("Authorized");
 
-            Console.WriteLine("Completed");
+            var installFolder = GetCeVIOInstallFolder();
+
+            Console.WriteLine("Patching CeVIO.ToolBarControl.dll");
+            AssemblyPatcher.PatchFile(installFolder);
+
+            Console.WriteLine("Deleting Ngen");
+            AssemblyPatcher.DeleteNgen(installFolder);
+            
             Console.WriteLine("You should reactivate CeVIO AI before " + DateTime.Now.AddDays(365).ToLongDateString());
-            Console.ReadLine();
+
+            Console.WriteLine("Replace the file to enable offline export");
+            AssemblyPatcher.ReplaceFile(installFolder);
         }
 
-        private static string GetCeVIOExecutable()
+        private static string GetCeVIOInstallFolder()
         {
-            var folder = "";
             using (var reg = Registry.LocalMachine.OpenSubKey("SOFTWARE\\CeVIO_NV\\Subject\\Editor\\x64"))
             {
                 if (reg == null)
                 {
                     return null;
                 }
-                folder = reg.GetValue("InstallFolder") as string;
+                return reg.GetValue("InstallFolder") as string;
             }
+        }
+
+        private static string GetCeVIOExecutable()
+        {
+            var folder = GetCeVIOInstallFolder();
 
             if (string.IsNullOrEmpty(folder))
             {
