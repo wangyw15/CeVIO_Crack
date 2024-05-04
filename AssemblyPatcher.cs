@@ -100,7 +100,7 @@ namespace CeVIOActivator
             var targetPath = Path.Combine(cevioInstallPath, TARGET_FILE);
             var process = new Process();
             process.StartInfo.FileName = "cmd.exe";
-            process.StartInfo.Arguments = $"/c \"timeout 1 /nobreak & copy /y \"{sourcePath}\" \"{targetPath}\" & del \"{sourcePath}\" & echo Completed & pause\"";
+            process.StartInfo.Arguments = $"/c \"timeout 1 /nobreak & copy /y \"{targetPath}\" \"{targetPath}.bak\" & copy /y \"{sourcePath}\" \"{targetPath}\" & del \"{sourcePath}\" & echo Completed & pause\"";
             process.StartInfo.UseShellExecute = false;
             process.Start();
         }
