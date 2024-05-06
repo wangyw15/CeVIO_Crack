@@ -27,15 +27,21 @@ namespace CeVIOActivator
             var installFolder = GetCeVIOInstallFolder();
 
             Console.WriteLine("Patching CeVIO.ToolBarControl.dll");
-            AssemblyPatcher.PatchFile(installFolder);
+            var thisTimePatched = AssemblyPatcher.PatchFile(installFolder);
 
-            Console.WriteLine("Deleting Ngen");
-            AssemblyPatcher.DeleteNgen(installFolder);
+            if (thisTimePatched)
+            {
+                Console.WriteLine("Deleting Ngen");
+                AssemblyPatcher.DeleteNgen(installFolder);
+            }
             
             Console.WriteLine("You should reactivate CeVIO AI before " + DateTime.Now.AddYears(100).ToLongDateString());
 
-            Console.WriteLine("Replace the file to enable offline export");
-            AssemblyPatcher.ReplaceFile(installFolder);
+            if (thisTimePatched)
+            {
+                Console.WriteLine("Replace the file to enable offline export");
+                AssemblyPatcher.ReplaceFile(installFolder);
+            }
         }
 
         private static string GetCeVIOInstallFolder()

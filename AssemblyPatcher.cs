@@ -12,6 +12,7 @@ namespace CeVIOActivator
     public static class AssemblyPatcher
     {
         private const string TARGET_FILE = "CeVIO.ToolBarControl.dll";
+        private const string TARGET_CLASS = "CeVIO.Editor.MissionAssistant.Authorizer";
 
         [Obsolete("Directly patch executable will make it not work. Use PatchFile instead.")]
         public static void PatchExecutable(string cevioExecutablePath)
@@ -33,7 +34,7 @@ namespace CeVIOActivator
             asm.Write("CeVIO AI.exe");
         }
 
-        public static void PatchFile(string cevioInstallPath)
+        public static bool PatchFile(string cevioInstallPath)
         {
             // System.Void CeVIO.ToolBarControl.ToolBarControl::.cctor()
             // System.Reflection.Assembly.GetEntryAssembly().GetType("CeVIO.Editor.MissionAssistant.Authorizer").GetProperty("HasAuthorized").SetValue(null, true);
@@ -49,12 +50,12 @@ namespace CeVIOActivator
             var type = module.GetType("CeVIO.ToolBarControl.ToolBarControl");
             var method = type.Methods.First(m => m.Name == ".cctor");
 
-            // patch
+            // generate instructions
             var processor = method.Body.GetILProcessor();
             var instructions = new Instruction[]
             {
                 processor.Create(OpCodes.Call, module.ImportReference(typeof(Assembly).GetMethod("GetEntryAssembly"))),
-                processor.Create(OpCodes.Ldstr, "CeVIO.Editor.MissionAssistant.Authorizer"),
+                processor.Create(OpCodes.Ldstr, TARGET_CLASS),
                 processor.Create(OpCodes.Callvirt, module.ImportReference(typeof(Assembly).GetMethod("GetType", new Type[] { typeof(string) }))),
                 processor.Create(OpCodes.Ldstr, "HasAuthorized"),
                 processor.Create(OpCodes.Callvirt, module.ImportReference(typeof(Type).GetMethod("GetProperty", new Type[] { typeof(string) }))),
@@ -64,6 +65,14 @@ namespace CeVIOActivator
                 processor.Create(OpCodes.Callvirt, module.ImportReference(typeof(PropertyInfo).GetMethod("SetValue", new Type[] { typeof(object), typeof(object) })))
             };
 
+            // detect if patched
+            if (method.Body.Instructions.Any(x => x.Operand as string == TARGET_CLASS))
+            {
+                Console.WriteLine("Already patched, skip");
+                return false;
+            }
+
+            // patch
             for (var i = instructions.Length - 1; i >= 0; i--)
             {
                 processor.InsertBefore(method.Body.Instructions[0], instructions[i]);
@@ -71,6 +80,8 @@ namespace CeVIOActivator
             
             // write
             module.Write(TARGET_FILE);
+
+            return true;
         }
 
         public static void DeleteNgen(string cevioInstallPath)
@@ -99,7 +110,7 @@ namespace CeVIOActivator
             var sourcePath = Path.GetFullPath(TARGET_FILE);
             var targetPath = Path.Combine(cevioInstallPath, TARGET_FILE);
             // backup unmodified file
-            File.Copy(sourcePath, sourcePath + ".bak", true);
+            File.Copy(targetPath, targetPath + ".bak", true);
             var process = new Process();
             process.StartInfo.FileName = "cmd.exe";
             process.StartInfo.Arguments = $"/c \"timeout 1 /nobreak & copy /y \"{targetPath}\" \"{targetPath}.bak\" & copy /y \"{sourcePath}\" \"{targetPath}\" & del \"{sourcePath}\" & echo Completed & pause\"";
