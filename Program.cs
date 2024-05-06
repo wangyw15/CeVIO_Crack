@@ -32,7 +32,7 @@ namespace CeVIOActivator
             Console.WriteLine("Deleting Ngen");
             AssemblyPatcher.DeleteNgen(installFolder);
             
-            Console.WriteLine("You should reactivate CeVIO AI before " + DateTime.Now.AddDays(365).ToLongDateString());
+            Console.WriteLine("You should reactivate CeVIO AI before " + DateTime.Now.AddYears(100).ToLongDateString());
 
             Console.WriteLine("Replace the file to enable offline export");
             AssemblyPatcher.ReplaceFile(installFolder);
