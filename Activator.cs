@@ -5,7 +5,7 @@ using CeVIO;
 
 namespace CeVIOActivator
 {
-    public class Activator
+    public class Activator : IDisposable
     {
         public string ActivationKey { get; set; } = "00000-00000-00000-00000";
         
@@ -101,6 +101,11 @@ namespace CeVIOActivator
                 }
                 return "";
             }
+        }
+
+        public void Dispose()
+        {
+            _Assembly.Dispose();
         }
     }
 }

@@ -1,20 +1,48 @@
 ﻿using System;
-using System.Text;
-using System.Reflection;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text;
 using System.Xml.Linq;
 
 namespace CeVIO
 {
-    public class CeVIOAssembly
+    internal class ProxyDomain : MarshalByRefObject
     {
-        public Assembly Instance { get; }
+        public string AssemblyBasePath { get; set; }
 
-        private Type _EditorResource;
+        public Assembly LoadAssembly(string path)
+        {
+            return Assembly.LoadFrom(path);
+        }
+    }
+
+    public class CeVIOAssembly : IDisposable
+    {
+        public Assembly Instance { get; private set; }
+
+        private AppDomain _Domain { get; }
+        private Type _EditorResource { get; }
 
         public CeVIOAssembly(string cevioExecutablePath)
         {
-            Instance = Assembly.LoadFile(cevioExecutablePath);
+            AppDomain.CurrentDomain.AssemblyResolve += (sender, e) =>
+            {
+                var name = new AssemblyName(e.Name).Name;
+                foreach (var i in Directory.GetFiles(Path.GetDirectoryName(cevioExecutablePath)))
+                {
+                    if (Path.GetFileNameWithoutExtension(i) == name)
+                    {
+                        return Assembly.LoadFile(i);
+                    }
+                }
+                return null;
+            };
+
+            _Domain = AppDomain.CreateDomain("CeVIO", AppDomain.CurrentDomain.Evidence, AppDomain.CurrentDomain.SetupInformation);
+            var loader = (ProxyDomain)_Domain.CreateInstanceAndUnwrap(typeof(ProxyDomain).Assembly.FullName, typeof(ProxyDomain).FullName);
+
+            Instance = loader.LoadAssembly(cevioExecutablePath);
             _EditorResource = Instance.GetType("CeVIO.Editor.Properties.Resources");
         }
 
@@ -26,6 +54,12 @@ namespace CeVIO
         public T GetEditorResource<T>(string name)
         {
             return (T)GetEditorResource(name);
+        }
+
+        public void Dispose()
+        {
+            Instance = null;
+            AppDomain.Unload(_Domain);
         }
     }
 

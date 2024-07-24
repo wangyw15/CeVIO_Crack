@@ -50,6 +50,12 @@ namespace CeVIOActivator
             var type = module.GetType("CeVIO.ToolBarControl.ToolBarControl");
             var method = type.Methods.First(m => m.Name == ".cctor");
 
+            // detect if patched
+            if (method.Body.Instructions.Any(x => x.Operand as string == TARGET_CLASS))
+            {
+                return false;
+            }
+
             // generate instructions
             var processor = method.Body.GetILProcessor();
             var instructions = new Instruction[]
@@ -64,13 +70,6 @@ namespace CeVIOActivator
                 processor.Create(OpCodes.Box, module.ImportReference(typeof(bool))),
                 processor.Create(OpCodes.Callvirt, module.ImportReference(typeof(PropertyInfo).GetMethod("SetValue", new Type[] { typeof(object), typeof(object) })))
             };
-
-            // detect if patched
-            if (method.Body.Instructions.Any(x => x.Operand as string == TARGET_CLASS))
-            {
-                Console.WriteLine("Already patched, skip");
-                return false;
-            }
 
             // patch
             for (var i = instructions.Length - 1; i >= 0; i--)
@@ -111,11 +110,17 @@ namespace CeVIOActivator
             var targetPath = Path.Combine(cevioInstallPath, TARGET_FILE);
             // backup unmodified file
             File.Copy(targetPath, targetPath + ".bak", true);
-            var process = new Process();
-            process.StartInfo.FileName = "cmd.exe";
-            process.StartInfo.Arguments = $"/c \"timeout 1 /nobreak & copy /y \"{targetPath}\" \"{targetPath}.bak\" & copy /y \"{sourcePath}\" \"{targetPath}\" & del \"{sourcePath}\" & echo Completed & pause\"";
-            process.StartInfo.UseShellExecute = false;
-            process.Start();
+            // replace
+            File.Copy(sourcePath, targetPath, true);
+            // delete source
+            File.Delete(sourcePath);
+
+            // old method by cmd
+            //var process = new Process();
+            //process.StartInfo.FileName = "cmd.exe";
+            //process.StartInfo.Arguments = $"/c \"timeout 1 /nobreak & copy /y \"{targetPath}\" \"{targetPath}.bak\" & copy /y \"{sourcePath}\" \"{targetPath}\" & del \"{sourcePath}\" & echo Completed & pause\"";
+            //process.StartInfo.UseShellExecute = false;
+            //process.Start();
         }
     }
 }

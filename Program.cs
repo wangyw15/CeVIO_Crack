@@ -7,6 +7,8 @@ namespace CeVIOActivator
     class Program
     {
         // N54KC-7U2ZL-PQZBM-SPF8H suzuki trial key
+        const int DEFAULT_ACTIVATION_DAYS = 100 * 365;
+
         static void Main(string[] args)
         {
             var executablePath = GetCeVIOExecutable();
@@ -18,7 +20,7 @@ namespace CeVIOActivator
             
             Console.WriteLine("Loading...");
             var activator = new Activator(executablePath);
-            activator.ActivateProducts();
+            activator.ActivateProducts(TimeSpan.FromDays(DEFAULT_ACTIVATION_DAYS));
             Console.WriteLine("Activated all packages");
 
             activator.GenerateLicenseSummary();
@@ -26,22 +28,28 @@ namespace CeVIOActivator
 
             var installFolder = GetCeVIOInstallFolder();
 
-            Console.WriteLine("Patching CeVIO.ToolBarControl.dll");
             var thisTimePatched = AssemblyPatcher.PatchFile(installFolder);
 
             if (thisTimePatched)
             {
+                Console.WriteLine("Patching CeVIO.ToolBarControl.dll");
                 Console.WriteLine("Deleting Ngen");
                 AssemblyPatcher.DeleteNgen(installFolder);
-            }
-            
-            Console.WriteLine("You should reactivate CeVIO AI before " + DateTime.Now.AddYears(100).ToLongDateString());
 
-            if (thisTimePatched)
-            {
-                Console.WriteLine("Replace the file to enable offline export");
+                activator.Dispose(); // release the assembly
+
+                Console.WriteLine("Replacing the file to enable offline export");
                 AssemblyPatcher.ReplaceFile(installFolder);
             }
+            else
+            {
+                Console.WriteLine("CeVIO.ToolBarControl.dll already patched, skip");
+            }
+            
+            Console.WriteLine("You should reactivate CeVIO AI before " + DateTime.Now.AddDays(DEFAULT_ACTIVATION_DAYS).ToLongDateString());
+
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
         }
 
         private static string GetCeVIOInstallFolder()
