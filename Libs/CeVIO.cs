@@ -109,6 +109,15 @@ namespace CeVIO
             var method = Instance.GetMethod("ScrambleDateTime", BindingFlags.Static | BindingFlags.NonPublic);
             return (byte[])method.Invoke(null, new object[] { value });
         }
+
+        public TimeSpan OfflineAcceptablePeriod
+        {
+            get
+            {
+                var span = Instance.GetField("OfflineAcceptablePeriod");
+                return (TimeSpan)span.GetValue(null);
+            }
+        }
     }
 
     public class Authorizer

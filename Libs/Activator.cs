@@ -103,6 +103,8 @@ namespace CeVIOActivator
             }
         }
 
+        public TimeSpan OfflineAcceptablePeriod => _ProductLicense.OfflineAcceptablePeriod;
+
         public void Dispose()
         {
             _Assembly.Dispose();
