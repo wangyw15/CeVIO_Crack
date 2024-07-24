@@ -85,9 +85,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Activator.cs" />
-    <Compile Include="CeVIO.cs" />
-    <Compile Include="AssemblyPatcher.cs" />
+    <Compile Include="Libs\Activator.cs" />
+    <Compile Include="Libs\CeVIO.cs" />
+    <Compile Include="Libs\AssemblyPatcher.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
